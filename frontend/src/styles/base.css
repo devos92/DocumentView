@@ -1,0 +1,139 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&display=swap');
+
+:root {
+    --color-background: #ffffffff; /* var(--color-background) */
+    --color-text-primary: #01161eff; /* var(--text-color-primary) */
+    --color-text-secondary: #124559ff; /* var(--text-color-secondary) */
+    --color-text-tertiary: #6b7280ff; /* var(--text-color-tertiary) */
+}
+
+body {
+    font-family: "Inter", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    background-color: var(--color-background);
+    margin: 0;
+    min-height: 100vh;
+}
+
+.dark body{
+    background-color: var(--color-primary);
+}
+
+h1, h2, p {
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 600;
+    font-style: normal;
+    margin: 0 0 10px;
+    color: var(--color-text-primary);
+}
+
+h1 {
+    font-size: 2.5em;
+}
+
+h2 {
+    font-size: 1.2em;
+}
+
+p {
+    font-size: 1em;
+    color: var(--color-text-secondary);
+}
+
+.inter-thin {
+    font-family: "Inter", sans-serif;
+    font-weight: 100;
+    font-style: normal;
+}
+
+.inter-extra-light {
+    font-family: "Inter", sans-serif;
+    font-weight: 200;
+    font-style: normal;
+}
+
+.inter-regular {
+    font-family: "Inter", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.red-hat-display-light {
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 300;
+    font-style: normal;
+}
+
+.red-hat-display-regular {
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.red-hat-display-medium {
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 500;
+    font-style: normal;
+}
+
+.red-hat-display-semi-bold {
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 600;
+    font-style: normal;
+}
+
+.red-hat-display-bold {
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 700;
+    font-style: normal;
+}
+
+.red-hat-display-black {
+    font-family: "Red Hat Display", sans-serif;
+    font-weight: 900;
+    font-style: normal;
+}
+
+.truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.masonry-grid {
+    display: flex;
+    margin-left: -30px;
+    /* gutter size offset */
+    width: auto;
+}
+
+.masonry-grid_column {
+    padding-left: 30px;
+    /* gutter size */
+    background-clip: padding-box;
+}
+
+.masonry-grid_column > div {
+    margin-bottom: 30px;
+}
+
+.layout-dropdown-menu {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.layout-dropdown-menu button {
+    border-radius: 0;
+}
+
+.layout-dropdown-menu button:first-child {
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.layout-dropdown-menu button:last-child {
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}

@@ -1,0 +1,23 @@
+name: Feature Request
+description: Suggest an idea for this project
+title: "[FEATURE] "
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the feature you would like to see.
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: "Feature description"
+      description: "Provide a clear and concise description of the feature you're requesting."
+  
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: "Additional context"
+      description: "Add any other context or screenshots about the feature request here."

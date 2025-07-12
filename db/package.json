@@ -1,0 +1,15 @@
+{
+  "type": "module",
+  "name": "db",
+  "version": "1.0.0",
+  "main": "generator.js",
+  "scripts": {
+    "start": "node generator.js"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^7.6.0",
+    "bcrypt": "^5.0.1",
+    "fs": "0.0.1-security",
+    "mongoose": "^6.0.0"
+  }
+}

@@ -1,0 +1,130 @@
+.issue-container {
+    /* background-color: var(--beige); */
+    /* border-radius: 8px; */
+    /* box-shadow: 0 2px 5px #00000f; */
+    padding: 10px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    /* width: 300px;
+    height: 550px; */
+    position: relative;
+}
+
+/* Status at the top-right corner */
+.issue-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    color: var(--rich-black);
+}
+
+.issue-status.completed {
+    background-color: #27ae60;
+}
+
+.issue-status.cancelled {
+    background-color: #ff0000;
+}
+
+.issue-status.in-progress{
+    background-color: #f39c12;
+}
+
+.issue-status.pending {
+    background-color: #f39c12;
+}
+
+/* Icon and Title */
+.issue-header {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.issue-icon {
+    width: 32px;
+    height: 32px;
+    margin-top: 30px;
+    margin-right: 10px;
+    padding: 5px;
+    background-color: var(--air-force-blue);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    -ms-border-radius: 5px;
+    -o-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.issue-title {
+    font-size: 18px;
+    margin: 0;
+    padding-top: 30px;
+    text-align: left;
+}
+
+/* Date */
+.issue-date {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+/* Description */
+.issue-description {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 4;
+    line-clamp: 5;
+    margin: 0 0 10px;
+}
+
+/* Reference */
+.issue-reference {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+/* Attachments */
+.issue-attachments {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+/* Image */
+.issue-image {
+    width: 100%;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+/* View more button */
+.issue-view-more {
+    font-size: 14px;
+    color: white;
+    background-color: #5982ff;
+    text-align: center;
+    padding: 10px 20px;
+    border-radius: 5px;
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.issue-view-more:hover {
+    background-color: #01161eff;
+    cursor: pointer;
+}

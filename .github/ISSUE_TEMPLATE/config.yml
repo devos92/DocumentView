@@ -1,0 +1,5 @@
+blank_issues_enabled: false  # If true, allows people to create blank issues
+contact_links:
+  - name: Report a security vulnerability
+    url: https://example.com/security
+    about: If you have found a security issue, please report it here.

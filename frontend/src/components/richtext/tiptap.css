@@ -1,0 +1,173 @@
+.tiptap-toolbar {
+    display: flex;
+    padding: 5px;
+    border-top: 1px solid #ddd;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.tiptap-editor {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  min-height: 200px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.tiptap-toolbar .btn {
+    padding: 5px 10px;
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.tiptap-toolbar .btn-left {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.tiptap-toolbar .btn-middle {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+}
+
+.tiptap-toolbar .btn-right {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.tiptap-toolbar .btn:hover {
+    background: #e0e0e0;
+}
+
+.tiptap-toolbar .btn-active {
+    background: #0070f3;
+    color: white;
+}
+
+.tiptap-toolbar .btn-active:hover {
+    background: #0053cc;
+}
+
+.tiptap-toolbar .btn-group {
+    display: flex;
+    gap: 0%;
+    margin-right: 0.5rem;
+}
+
+.tiptap-content {
+    padding: 10px;
+    min-height: 150px;
+}
+
+.dark .tiptap-content {
+    background-color: #ddd; /* Dark mode background */
+}
+
+.tiptap-content.tiptap-content-inactive {
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: border 0.3s ease;
+}
+
+.tiptap-content.tiptap-content-inactive.can-edit:hover {
+    border: 1px solid #ddd;
+}
+
+.tiptap-content.tiptap-content-active {
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.ProseMirror-focused:focus {
+    outline: none;
+}
+
+.tiptap-content ul,
+.tiptap-content ol {
+    padding-left: 20px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.tiptap-content ul {
+    list-style-type: disc;
+}
+
+.tiptap-content ol {
+    list-style-type: decimal;
+}
+
+.tiptap-content ul li,
+.tiptap-content ol li {
+    margin-bottom: 5px;
+}
+
+.tiptap-content h1,
+.tiptap-content h2,
+.tiptap-content h3,
+.tiptap-content h4,
+.tiptap-content h5,
+.tiptap-content h6 {
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+.tiptap-content h1 {
+    font-size: 2em;
+}
+
+.tiptap-content h2 {
+    font-size: 1.5em;
+}
+
+.tiptap-content h3 {
+    font-size: 1.17em;
+}
+
+.tiptap-content h4 {
+    font-size: 1em;
+}
+
+.tiptap-content h5 {
+    font-size: 0.83em;
+}
+
+.tiptap-content h6 {
+    font-size: 0.67em;
+}
+
+.tiptap-content blockquote {
+    margin: 0;
+    padding-left: 1em;
+    border-left: 2px solid #ddd;
+}
+
+.tiptap-content a {
+    color: #0070f3;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.tiptap-content a:hover {
+    color: #0053cc;
+}
+
+.tiptap-content a:visited {
+    color: #7a3ff1;
+}
+
+.button-group {
+    padding: 0.5rem; /* Equivalent to m-2 */
+}
+
+.overflow-button:not(:first-child) {
+    margin-left: 0.5rem; /* Equivalent to space-x-2 */
+}
