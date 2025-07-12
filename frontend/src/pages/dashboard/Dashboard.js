@@ -1,10 +1,16 @@
-import { Bars3Icon, InformationCircleIcon, PlusIcon, QueueListIcon, RectangleGroupIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import {
+  Bars3Icon,
+  InformationCircleIcon,
+  PlusIcon,
+  QueueListIcon,
+  RectangleGroupIcon,
+  Squares2X2Icon,
+} from '@heroicons/react/24/outline';
 import Fuse from 'fuse.js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import apiClient from '../../api/apiClient';
-import AddIssuePopup from '../../components/AddIssue';
 import FluentLayout from '../../components/FluentLayout';
 import Issue from '../../components/Issue';
 import IssueView from '../../components/IssueView';
@@ -24,7 +30,7 @@ import '../../styles/loadingRing.css';
  */
 const Dashboard = () => {
   const navigate = useNavigate(); // React Router hook for programmatic navigation
-  const [setPopupHandler] = useState(() => () => { }); // Handler function for different popups
+  const [setPopupHandler] = useState(() => () => {}); // Handler function for different popups
   const [fetched, setFetched] = useState(false); // State to track if the issues have been fetched
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to control sidebar visibility
   const [searchTerm, setSearchTerm] = useState(''); // Search term for filtering issues
@@ -32,10 +38,16 @@ const Dashboard = () => {
   const [allIssues, setAllIssues] = useState([]); // All issues retrieved from the API
   const [filteredIssues, setFilteredIssues] = useState([]); // Issues filtered based on search term or filter type
   const [updateTrigger, setUpdateTrigger] = useState(0); // Trigger to force re-fetch of issues
-  const [filterType, setFilterType] = useState(localStorage.getItem('filterType') || 'all'); // Filter type for issues, initialized from localStorage
-  const [statusFilter, setStatusFilter] = useState(JSON.parse(localStorage.getItem('statusFilter')) || []); // State for the status filter
+  const [filterType, setFilterType] = useState(
+    localStorage.getItem('filterType') || 'all'
+  ); // Filter type for issues, initialized from localStorage
+  const [statusFilter, setStatusFilter] = useState(
+    JSON.parse(localStorage.getItem('statusFilter')) || []
+  ); // State for the status filter
   const { user } = useUser(); // Fetch authenticated user data from the context
-  const [layoutType, setLayoutType] = useState(localStorage.getItem('layoutType') || 'masonry'); // Layout type for displaying issues - masonry, grid, or list
+  const [layoutType, setLayoutType] = useState(
+    localStorage.getItem('layoutType') || 'masonry'
+  ); // Layout type for displaying issues - masonry, grid, or list
   const [isLayoutDropdownOpen, setIsLayoutDropdownOpen] = useState(false); // State to control visibility of the layout dropdown
   const { openModal, closeModal } = useModal();
 
@@ -66,13 +78,20 @@ const Dashboard = () => {
 
       if (response.data.success) {
         let issues = response.data.data;
-        issues = issues.map((issue) => ({ ...issue, ref_id: generateNiceReferenceId(issue) }));
+        issues = issues.map((issue) => ({
+          ...issue,
+          ref_id: generateNiceReferenceId(issue),
+        }));
 
         // Apply status filter
         if (statusFilter.length > 0) {
           issues = issues.filter((issue) => {
             // Extract the latest status_id from status_history
-            const latestStatus = issue.status_history.length > 0 ? issue.status_history[issue.status_history.length - 1].status_id : null;
+            const latestStatus =
+              issue.status_history.length > 0
+                ? issue.status_history[issue.status_history.length - 1]
+                    .status_id
+                : null;
             return statusFilter.includes(latestStatus);
           });
         }
@@ -90,7 +109,6 @@ const Dashboard = () => {
       setFetched(true); // Ensure UI shows that fetching is complete
     }
   }, [filterType, statusFilter, user]);
-
 
   /**
    * useEffect hook to fetch issues whenever the filter type, update trigger, or user context changes.
@@ -127,10 +145,6 @@ const Dashboard = () => {
   /**
    * Handler to open the 'Add Issue' popup and set the appropriate handler and type.
    */
-  const showAddIssueModal = () => {
-    setPopupHandler(() => addHandler);
-    openModal(<AddIssuePopup closeHandler={(changed) => closeModalCallback(changed)} />, false);
-  };
 
   const issueViewRef = useRef();
   /**
@@ -138,7 +152,14 @@ const Dashboard = () => {
    * @param {Object} issue - The issue object to be displayed.
    */
   const showIssueViewModal = (issue) => {
-    openModal(<IssueView ref={issueViewRef} issue={issue} onClose={() => closeModalCallback(true)} />, true);
+    openModal(
+      <IssueView
+        ref={issueViewRef}
+        issue={issue}
+        onClose={() => closeModalCallback(true)}
+      />,
+      true
+    );
   };
 
   /**
@@ -181,9 +202,12 @@ const Dashboard = () => {
     }
 
     // Apply status filter
-    const statusFilteredIssues = statusFilter.length === 0
-      ? newFilteredIssues
-      : newFilteredIssues.filter((issue) => statusFilter.includes(issue.status_id));
+    const statusFilteredIssues =
+      statusFilter.length === 0
+        ? newFilteredIssues
+        : newFilteredIssues.filter((issue) =>
+            statusFilter.includes(issue.status_id)
+          );
 
     setFilteredIssues(statusFilteredIssues);
   };
@@ -205,7 +229,7 @@ const Dashboard = () => {
   };
 
   const handleStatusFilterChange = (selectedOptions) => {
-    const selectedStatuses = selectedOptions.map(option => option.value);
+    const selectedStatuses = selectedOptions.map((option) => option.value);
     setStatusFilter(selectedStatuses);
     localStorage.setItem('statusFilter', JSON.stringify(selectedStatuses));
   };
@@ -228,7 +252,12 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <div className="lds-ring"><div></div><div></div><div></div><div></div></div>
+          <div className="lds-ring">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
           <p>Loading...</p>
         </div>
       </div>
@@ -262,7 +291,11 @@ const Dashboard = () => {
             <Bars3Icon className="w-6 h-6" />
           </button>
           <span className="hidden lg:inline">
-            <Logo className="truncate text-neutral dark:text-white xs:text-base md:text-lg lg:text-4xl" navigate={navigate} useClick={true} />
+            <Logo
+              className="truncate text-neutral dark:text-white xs:text-base md:text-lg lg:text-4xl"
+              navigate={navigate}
+              useClick={true}
+            />
           </span>
         </div>
 
@@ -285,27 +318,45 @@ const Dashboard = () => {
               onClick={toggleLayoutDropdown}
               className="bg-white text-primary-600 px-4 py-2 rounded-lg font-semibold focus:outline-none transition-transform transform hover:scale-105 hover:shadow-lg dark:bg-gray-800 dark:text-white dark:placeholder-white"
             >
-              {layoutType === 'masonry' ? <RectangleGroupIcon className="w-6 h-6" /> : layoutType === 'grid' ? <Squares2X2Icon className="w-6 h-6" /> : <QueueListIcon className="w-6 h-6" />}
+              {layoutType === 'masonry' ? (
+                <RectangleGroupIcon className="w-6 h-6" />
+              ) : layoutType === 'grid' ? (
+                <Squares2X2Icon className="w-6 h-6" />
+              ) : (
+                <QueueListIcon className="w-6 h-6" />
+              )}
             </button>
             {isLayoutDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 layout-dropdown-menu dark:bg-neutral dark:border-gray-700">
                 <button
                   onClick={() => handleLayoutChange('masonry')}
-                  className={`block w-full text-left px-4 py-2 text-gray-700  dark:hover:text-gray-100 dark:hover:bg-gray-700 ${layoutType === 'masonry' ? 'bg-gray-100 dark:text-gray-100 dark:bg-gray-700' : ''}`}
+                  className={`block w-full text-left px-4 py-2 text-gray-700  dark:hover:text-gray-100 dark:hover:bg-gray-700 ${
+                    layoutType === 'masonry'
+                      ? 'bg-gray-100 dark:text-gray-100 dark:bg-gray-700'
+                      : ''
+                  }`}
                 >
                   <RectangleGroupIcon className="w-5 h-5 inline mr-2" />
                   Adaptive
                 </button>
                 <button
                   onClick={() => handleLayoutChange('grid')}
-                  className={`block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-gray-700 ${layoutType === 'grid' ? 'bg-gray-100 dark:bg-gray-700 dark:text-gray-100' : ''}`}
+                  className={`block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-gray-700 ${
+                    layoutType === 'grid'
+                      ? 'bg-gray-100 dark:bg-gray-700 dark:text-gray-100'
+                      : ''
+                  }`}
                 >
                   <Squares2X2Icon className="w-5 h-5 inline mr-2" />
                   Grid
                 </button>
                 <button
                   onClick={() => handleLayoutChange('list')}
-                  className={`block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-gray-700 ${layoutType === 'list' ? 'bg-gray-100 dark:text-gray-100 dark:bg-gray-700' : ''}`}
+                  className={`block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-gray-700 ${
+                    layoutType === 'list'
+                      ? 'bg-gray-100 dark:text-gray-100 dark:bg-gray-700'
+                      : ''
+                  }`}
                 >
                   <QueueListIcon className="w-5 h-5 inline mr-2" />
                   List
@@ -313,18 +364,15 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-          <button
-            onClick={showAddIssueModal}
-            className="bg-white text-primary-600 px-4 py-2 rounded-lg font-semibold focus:outline-none transition-transform transform hover:scale-105 hover:shadow-lg flex items-center space-x-2 dark:bg-gray-800 dark:placeholder-whitedark:bg-neutral dark:text-white"
-          >
-            <PlusIcon className="w-6 h-6" />
-            <span className="hidden lg:inline">New Issue</span>
-          </button>
         </div>
       </header>
 
       <div className="flex flex-grow">
-        <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} navigate={navigate} />
+        <Sidebar
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          navigate={navigate}
+        />
 
         {/* Main Content */}
         <main className="flex-grow p-4 overflow-y-auto">
@@ -335,7 +383,10 @@ const Dashboard = () => {
               <Select
                 id="filter-select"
                 options={filterOptions}
-                value={filterOptions.find(option => filterType === option.value) || null}
+                value={
+                  filterOptions.find((option) => filterType === option.value) ||
+                  null
+                }
                 onChange={handleFilterChange}
                 className="text-primary-600 font-semibold focus:outline-none"
                 placeholder="Filter by Owner"
@@ -347,7 +398,11 @@ const Dashboard = () => {
                 id="status-filter-select"
                 isMulti
                 options={statusOptions}
-                value={statusOptions.filter(option => statusFilter.includes(option.value)) || []}
+                value={
+                  statusOptions.filter((option) =>
+                    statusFilter.includes(option.value)
+                  ) || []
+                }
                 onChange={handleStatusFilterChange}
                 className="text-primary-600 font-semibold focus:outline-none "
                 placeholder="Filter by Status"
@@ -356,7 +411,9 @@ const Dashboard = () => {
           </div>
           {/* Display message if no issues found */}
           {noIssuesMessage && (
-            <div className="flex justify-center items-center text-center text-red-500 mb-4 h-full dark:text-red-400">{noIssuesMessage}</div>
+            <div className="flex justify-center items-center text-center text-red-500 mb-4 h-full dark:text-red-400">
+              {noIssuesMessage}
+            </div>
           )}
           {filteredIssues.length === 0 && !noIssuesMessage && (
             <div className="flex justify-center items-center text-center text-gray-500 mb-4 h-full dark:text-gray-400">
