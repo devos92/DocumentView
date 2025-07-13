@@ -4,10 +4,10 @@ const User = require('../models/User');
 const RefreshToken = require('../models/refreshToken');
 const authenticateToken = require('../middleware/authenticateToken');
 const generateRefreshToken = require('../utils/generateRefreshToken');
-const validateEmail = require("../utils/validateEmail");
-const validatePassword = require("../utils/validatepassword");
-const isEmailTaken = require("../utils/isEmailTaken");
-const isUsernameTaken = require("../utils/isUsernameTaken");
+const validateEmail = require('../utils/validateEmail');
+const validatePassword = require('../utils/validatepassword');
+const isEmailTaken = require('../utils/isEmailTaken');
+const isUsernameTaken = require('../utils/isUsernameTaken');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -63,7 +63,9 @@ router.post('/register', async (req, res) => {
     };
 
     // Sign the JWT token
-    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: '1h',
+    });
 
     // Generate a refresh token
     const refreshToken = await generateRefreshToken(newUser._id);
@@ -87,11 +89,18 @@ router.post('/register', async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Registration successful',
-      user: { id: newUser._id, username: newUser.username, email: newUser.email, role: newUser.role },
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        role: newUser.role,
+      },
     });
   } catch (error) {
     console.error('Error saving user:', error);
-    return res.status(500).json({ error: 'Error saving user', details: error.message });
+    return res
+      .status(500)
+      .json({ error: 'Error saving user', details: error.message });
   }
 });
 
@@ -119,18 +128,18 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'invalid-email',
-        message: 'No account found with this email address.'
+        message: 'No account found with this email address.',
       });
     }
 
     // Validate password
-    const isPasswordValid = bcrypt.compareSync(password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
       // Specific error for incorrect password
       return res.status(400).json({
         success: false,
         error: 'invalid-password',
-        message: 'Incorrect password. Please try again.'
+        message: 'Incorrect password. Please try again.',
       });
     }
 
@@ -140,7 +149,9 @@ router.post('/login', async (req, res) => {
       role: user.role,
     };
 
-    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+    const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+      expiresIn: '1h',
+    });
 
     // Set access token cookie
     res.cookie('access_token', accessToken, {
@@ -168,16 +179,20 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       message: 'Login successful',
-      user: { id: user._id, username: user.username, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
     });
-
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(500).json({ error: 'Error during login', details: error.message });
+    res
+      .status(500)
+      .json({ error: 'Error during login', details: error.message });
   }
 });
-
-
 
 /**
  * Route to log out a user.
@@ -375,10 +390,11 @@ router.put('/update-username', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating username:', error);
-    return res.status(500).json({ error: 'Error updating username', details: error.message });
+    return res
+      .status(500)
+      .json({ error: 'Error updating username', details: error.message });
   }
 });
-
 
 /**
  * Route to update the password of the currently logged-in user.
@@ -419,11 +435,11 @@ router.put('/update-password', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating password:', error);
-    return res.status(500).json({ error: 'Error updating password', details: error.message });
+    return res
+      .status(500)
+      .json({ error: 'Error updating password', details: error.message });
   }
 });
-
-
 
 /**
  * Route to delete a user by ID.

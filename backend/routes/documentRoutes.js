@@ -12,7 +12,7 @@ const authenticateToken = require('../middleware/authenticateToken');
 const Document = require('../models/Document');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-/** 🔧 AWS S3 Client Configuration */
+/**  AWS S3 Client Configuration */
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -34,12 +34,13 @@ const upload = multer({
   }),
 });
 
-/** ✅ Upload Documents */
+/**  Upload Documents */
 router.post(
-  '/api/documents/:documentId',
+  '/:documentId',
   authenticateToken,
   upload.array('file', 5),
   async (req, res) => {
+    console.log('upload route hit');
     try {
       const { documentId } = req.params;
       const files = req.files || [];
@@ -86,9 +87,9 @@ router.post(
   }
 );
 
-/** ❌ Delete Attachment */
+/**  Delete Attachment */
 router.delete(
-  '/api/documents/:documentId/:attachmentId',
+  '/:documentId/:attachmentId',
   authenticateToken,
   async (req, res) => {
     try {
@@ -136,39 +137,35 @@ router.delete(
   }
 );
 
-/** 📄 Get Signed URLs for Viewing */
-router.get(
-  '/api/documents/:documentId/signedUrls',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { documentId } = req.params;
+/**  Get Signed URLs for Viewing */
+router.get('/:documentId/signedUrls', authenticateToken, async (req, res) => {
+  try {
+    const { documentId } = req.params;
 
-      const document = await Document.findById(documentId);
-      if (!document) {
-        return res.status(404).json({ message: 'Document not found' });
-      }
-
-      const attachmentsWithSignedUrls = await Promise.all(
-        document.attachments.map(async (attachment) => {
-          const command = new GetObjectCommand({
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: trimStart(attachment.file_path, '/'),
-          });
-          const signedUrl = await getSignedUrl(s3Client, command, {
-            expiresIn: 3600,
-          });
-          return { ...attachment.toObject(), signedUrl };
-        })
-      );
-
-      res.json(attachmentsWithSignedUrls);
-    } catch (error) {
-      console.error('Error fetching signed URLs:', error);
-      res.status(500).json({ message: 'Server error' });
+    const document = await Document.findById(documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
     }
+
+    const attachmentsWithSignedUrls = await Promise.all(
+      document.attachments.map(async (attachment) => {
+        const command = new GetObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: trimStart(attachment.file_path, '/'),
+        });
+        const signedUrl = await getSignedUrl(s3Client, command, {
+          expiresIn: 3600,
+        });
+        return { ...attachment.toObject(), signedUrl };
+      })
+    );
+
+    res.json(attachmentsWithSignedUrls);
+  } catch (error) {
+    console.error('Error fetching signed URLs:', error);
+    res.status(500).json({ message: 'Server error' });
   }
-);
+});
 
 /** 🛠 Helper to clean key path */
 function trimStart(str, charlist = '/') {

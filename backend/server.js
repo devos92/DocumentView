@@ -4,7 +4,6 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const UserRoutes = require('./routes/userRoutes');
 const documentRoutes = require('./routes/documentRoutes');
-
 const { S3Client } = require('@aws-sdk/client-s3');
 require('dotenv').config();
 
