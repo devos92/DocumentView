@@ -17,30 +17,43 @@ const UploadDocument = () => {
     return <p className="text-center mt-8 text-red-600">You must be an admin to upload documents.</p>;
 }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault(); 
+   const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!file || !title || !description) {
-            alert('Please fill in all fields and select a file.');
-            return;
-        }
+  if (!file || !title || !description) {
+    alert('Please fill in all fields and select a file.');
+    return;
+  }
+
+  try {
+    // 1️⃣ Create the document entry first (MongoDB)
+    const createDocRes = await axios.post(
+      '/api/documents',
+      { title, description },
+      { withCredentials: true }
+    );
+    const documentId = createDocRes.data._id; // Grab the ID of the new document
+
     
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('title', title);
-        formData.append('description', description);
+    const formData = new FormData();
+    formData.append('file', file); // key must match multer array('file', 5)
 
-    try {
-      const res = await axios.post('/api/documents/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Upload successful');
-      console.log(res.data);
-    } catch (err) {
-      console.error(err);
-      alert('Upload failed');
-    }
-  };
+    const uploadRes = await axios.post(
+      `/api/documents/${documentId}`, // Use that document ID here
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        withCredentials: true
+      }
+    );
+
+    alert('Upload successful!');
+    console.log(uploadRes.data);
+  } catch (err) {
+    console.error(err);
+    alert('Upload failed');
+  }
+};
 
   return (
     <div className="p-4 max-w-md mx-auto">

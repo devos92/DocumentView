@@ -34,6 +34,36 @@ const upload = multer({
   }),
 });
 
+/** create metadata */
+
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    if (!title || !description) {
+      return res
+        .status(400)
+        .json({ message: 'Title and description are required' });
+    }
+    const newDocument = new Document({
+      title,
+      description,
+      created_by: req.user.id,
+      attachments: [],
+    });
+
+    const savedDocument = await newDocument.save();
+    res
+      .status(201)
+      .json({
+        message: 'Document created successfully',
+        document: savedDocument,
+      });
+  } catch (error) {
+    console.error('Error creating document:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 /**  Upload Documents */
 router.post(
   '/:documentId',
