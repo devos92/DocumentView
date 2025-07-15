@@ -21,14 +21,12 @@ const s3Client = new S3Client({
   },
 });
 
-/** 🔧 Multer Config for Upload to S3 */
 const upload = multer({
   storage: multerS3({
     s3: s3Client,
     bucket: process.env.S3_BUCKET_NAME,
     key: (req, file, cb) => {
-      const key =
-        'documents/' + Date.now().toString() + '-' + file.originalname;
+      const key = `documents/${Date.now()}-${file.originalname}`;
       cb(null, key);
     },
   }),
@@ -37,48 +35,41 @@ const upload = multer({
 /** create metadata */
 
 router.post('/', authenticateToken, async (req, res) => {
+  const { title } = req.body;
+  console.log('Received title:', title);
+  if (!title) return res.status(400).json({ message: 'Title is required' });
+
   try {
-    const { title, description } = req.body;
-    if (!title || !description) {
-      return res
-        .status(400)
-        .json({ message: 'Title and description are required' });
-    }
-    const newDocument = new Document({
+    const newDoc = new Document({
       title,
-      description,
-      created_by: req.user.id,
+      created_at: new Date(),
       attachments: [],
     });
 
-    const savedDocument = await newDocument.save();
-    res
-      .status(201)
-      .json({
-        message: 'Document created successfully',
-        document: savedDocument,
-      });
-  } catch (error) {
-    console.error('Error creating document:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    await newDoc.save();
+    res.status(201).json(newDoc);
+  } catch (err) {
+    console.error('Error creating document:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
-/**  Upload Documents */
 router.post(
   '/:documentId',
   authenticateToken,
   upload.array('file', 5),
   async (req, res) => {
-    console.log('upload route hit');
+    console.log('Upload route hit');
+    console.log('Files:', req.files);
+
+    const { documentId } = req.params;
+    const files = req.files;
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+
     try {
-      const { documentId } = req.params;
-      const files = req.files || [];
-
-      if (files.length === 0) {
-        return res.status(400).json({ message: 'No files uploaded' });
-      }
-
       const document = await Document.findById(documentId);
       if (!document) {
         return res.status(404).json({ message: 'Document not found' });
@@ -87,7 +78,7 @@ router.post(
       const newAttachments = files.map((file) => ({
         user_id: req.user.id,
         file_path: file.key,
-        title: file.originalname || 'Untitled',
+        title: file.originalname,
         created_at: new Date(),
       }));
 

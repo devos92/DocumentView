@@ -37,7 +37,6 @@ app.use(cookieParser());
 
 app.use('/api/users', UserRoutes);
 app.use('/api/documents', documentRoutes);
-
 // Handle 404 errors for undefined routes
 app.use((req, res) => {
   res.status(404).send('Route not found');
