@@ -172,32 +172,29 @@ router.get('/', authenticateToken, async (req, res) => {
 
 /**  Get Signed URLs for Viewing */
 router.get('/:documentId/signedUrls', authenticateToken, async (req, res) => {
-  try {
-    const { documentId } = req.params;
+  const document = await Document.findById(req.params.documentId);
+  // … your 404 check …
 
-    const document = await Document.findById(documentId);
-    if (!document) {
-      return res.status(404).json({ message: 'Document not found' });
-    }
+  const attachmentsWithSignedUrls = await Promise.all(
+    document.attachments.map(async (attachment) => {
+      const key = trimStart(attachment.file_path, '/');
+      const cmd = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: key,
 
-    const attachmentsWithSignedUrls = await Promise.all(
-      document.attachments.map(async (attachment) => {
-        const command = new GetObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: trimStart(attachment.file_path, '/'),
-        });
-        const signedUrl = await getSignedUrl(s3Client, command, {
-          expiresIn: 3600,
-        });
-        return { ...attachment.toObject(), signedUrl };
-      })
-    );
+        // ** Force inline display **
+        ResponseContentDisposition: 'inline',
 
-    res.json(attachmentsWithSignedUrls);
-  } catch (error) {
-    console.error('Error fetching signed URLs:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
+        // ** Optional: explicitly tell S3 it’s a PDF **
+        ResponseContentType: 'application/pdf',
+      });
+
+      const signedUrl = await getSignedUrl(s3Client, cmd, { expiresIn: 3600 });
+      return { ...attachment.toObject(), signedUrl };
+    })
+  );
+
+  res.json(attachmentsWithSignedUrls);
 });
 
 /** 🛠 Helper to clean key path */

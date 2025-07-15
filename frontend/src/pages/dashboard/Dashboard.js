@@ -16,61 +16,55 @@ import '../../styles/loadingRing.css';
 const Dashboard = () => {
   const { user } = useUser();
   const isAdmin = user?.role === 'admin';
-  const { openModal } = useModal();
+  const { openModal, closeModal } = useModal();
 
   const [docs, setDocs] = useState([]);
-  const [filteredDocs, setFiltered] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredDocs, setF] = useState([]);
+  const [searchTerm, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // 1️⃣ Fetch all documents metadata
+  // 1) fetch metadata
   const fetchDocs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiClient.get('/api/documents');
       setDocs(res.data);
-      setFiltered(res.data);
+      setF(res.data);
     } catch (err) {
-      console.error('Error fetching documents:', err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     fetchDocs();
   }, [fetchDocs]);
 
-  // 2️⃣ Fuse.js search on title
+  // 2) search
   const fuse = new Fuse(docs, { keys: ['title'], threshold: 0.3 });
   const handleSearch = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    setFiltered(term ? fuse.search(term).map((r) => r.item) : docs);
+    const t = e.target.value;
+    setSearch(t);
+    setF(t ? fuse.search(t).map((r) => r.item) : docs);
   };
 
-  // 3️⃣ Open the pop‑out modal viewer
+  // 3) open in modal via iframe
   const openDocument = async (doc) => {
     try {
-      // fetch signed URLs for this doc
-      const { data: attachments } = await apiClient.get(
+      const { data: atts } = await apiClient.get(
         `/api/documents/${doc._id}/signedUrls`
       );
-      if (!attachments.length) {
-        return alert('No files attached to this document.');
-      }
-      // grab the first signed URL (or you could let DocumentViewer handle multiple)
-      const fileUrl = attachments[0].signedUrl;
+      if (!atts.length) return alert('No attachments');
       openModal(
         <DocumentViewer
-          fileUrl={fileUrl}
+          fileUrl={atts[0].signedUrl}
           title={doc.title}
-          onClose={() => {}}
+          onClose={closeModal}
         />
       );
     } catch (err) {
-      console.error('Error opening document:', err);
-      alert('Could not load document for viewing.');
+      console.error(err);
+      alert('Could not load document');
     }
   };
 
@@ -83,14 +77,14 @@ const Dashboard = () => {
           <div />
           <div />
         </div>
-        <p>Loading documents…</p>
+        <p>Loading…</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-dark">
-      {/* ─── Header ───────────────────────────────────────── */}
+      {/* Header */}
       <header className="bg-primary p-4 flex items-center justify-between shadow dark:bg-primaryAlt">
         <div className="flex items-center space-x-2">
           <Bars3Icon className="w-6 h-6 text-white lg:hidden" />
@@ -98,7 +92,7 @@ const Dashboard = () => {
         </div>
         <input
           className="px-4 py-2 w-64 rounded-lg focus:outline-none"
-          placeholder="Search documents…"
+          placeholder="Search…"
           value={searchTerm}
           onChange={handleSearch}
         />
@@ -115,12 +109,11 @@ const Dashboard = () => {
       <div className="flex flex-grow">
         <Sidebar />
 
-        {/* ─── Document List ───────────────────────────────── */}
         <main className="flex-1 p-4 overflow-auto">
           {filteredDocs.length === 0 ? (
             <div className="text-center text-gray-500">
-              <InformationCircleIcon className="w-6 h-6 inline-block mr-2" />
-              No documents found.
+              <InformationCircleIcon className="w-6 h-6 inline mr-1" />
+              No documents.
             </div>
           ) : (
             filteredDocs.map((doc) => (
