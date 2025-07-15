@@ -1,4 +1,5 @@
 require('dotenv').config();
+const express = require('express');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const {
@@ -6,13 +7,12 @@ const {
   GetObjectCommand,
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
-const express = require('express');
-const router = express.Router();
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const authenticateToken = require('../middleware/authenticateToken');
 const Document = require('../models/Document');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const router = express.Router();
 
-/**  AWS S3 Client Configuration */
+// AWS S3 Client Configuration
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -21,6 +21,7 @@ const s3Client = new S3Client({
   },
 });
 
+//Multer-S3 setup for streaming uploads to S3
 const upload = multer({
   storage: multerS3({
     s3: s3Client,
@@ -32,21 +33,20 @@ const upload = multer({
   }),
 });
 
-/** create metadata */
-
+/**
+ * POST /api/documents
+ * Create a new document metadata record
+ */
 router.post('/', authenticateToken, async (req, res) => {
   const { title } = req.body;
-  console.log('Received title:', title);
   if (!title) return res.status(400).json({ message: 'Title is required' });
 
   try {
-    const newDoc = new Document({
+    const newDoc = await Document.create({
       title,
       created_at: new Date(),
       attachments: [],
     });
-
-    await newDoc.save();
     res.status(201).json(newDoc);
   } catch (err) {
     console.error('Error creating document:', err);
@@ -54,145 +54,143 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/documents
+ * List all documents (title + creation date)
+ */
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const docs = await Document.find({}, 'title created_at');
+    res.json(docs);
+  } catch (err) {
+    console.error('Error fetching documents:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+/**
+ * GET /api/documents/:documentId
+ * Fetch one document along with its attachments' signed URLs
+ */
+router.get('/:documentId', authenticateToken, async (req, res) => {
+  const { documentId } = req.params;
+  try {
+    const doc = await Document.findById(documentId);
+    if (!doc) return res.status(404).json({ message: 'Document not found' });
+
+    const attachments = await Promise.all(
+      doc.attachments.map(async (att) => {
+        const key = att.file_path.replace(/^\/+/, '');
+        const url = await getSignedUrl(
+          s3Client,
+          new GetObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: key,
+          }),
+          { expiresIn: 3600 }
+        );
+        return { ...att.toObject(), signedUrl: url };
+      })
+    );
+
+    res.json({ ...doc.toObject(), attachments });
+  } catch (err) {
+    console.error('Error fetching document:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+/**
+ * POST /api/documents/:documentId/attachments
+ * Upload up to 5 files into S3 and attach metadata
+ */
 router.post(
-  '/:documentId',
+  '/:documentId/attachments',
   authenticateToken,
   upload.array('file', 5),
   async (req, res) => {
-    console.log('Upload route hit');
-    console.log('Files:', req.files);
-
     const { documentId } = req.params;
     const files = req.files;
-
     if (!files || files.length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
     try {
-      const document = await Document.findById(documentId);
-      if (!document) {
-        return res.status(404).json({ message: 'Document not found' });
-      }
+      const doc = await Document.findById(documentId);
+      if (!doc) return res.status(404).json({ message: 'Document not found' });
 
-      const newAttachments = files.map((file) => ({
+      const newAtts = files.map((file) => ({
         user_id: req.user.id,
         file_path: file.key,
         title: file.originalname,
         created_at: new Date(),
       }));
 
-      document.attachments.push(...newAttachments);
-      await document.save();
+      doc.attachments.push(...newAtts);
+      await doc.save();
 
-      const attachmentsWithSignedUrls = await Promise.all(
-        newAttachments.map(async (attachment) => {
-          const command = new GetObjectCommand({
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: trimStart(attachment.file_path, '/'),
-          });
-          const signedUrl = await getSignedUrl(s3Client, command, {
-            expiresIn: 3600,
-          });
-          return { ...attachment, signedUrl };
+      const attachments = await Promise.all(
+        newAtts.map(async (att) => {
+          const key = att.file_path.replace(/^\/+/, '');
+          const url = await getSignedUrl(
+            s3Client,
+            new GetObjectCommand({
+              Bucket: process.env.S3_BUCKET_NAME,
+              Key: key,
+            }),
+            { expiresIn: 3600 }
+          );
+          return { ...att, signedUrl: url };
         })
       );
 
-      res.json(attachmentsWithSignedUrls);
-    } catch (error) {
-      console.error('Upload error:', error);
-      res
-        .status(500)
-        .json({ error: 'Internal Server Error', details: error.message });
+      res.json(attachments);
+    } catch (err) {
+      console.error('Upload error:', err);
+      res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 );
 
-/**  Delete Attachment */
+/**
+ * DELETE /api/documents/:documentId/attachments/:attachmentId
+ * Remove an attachment both from S3 and the document record
+ */
 router.delete(
-  '/:documentId/:attachmentId',
+  '/:documentId/attachments/:attachmentId',
   authenticateToken,
   async (req, res) => {
+    const { documentId, attachmentId } = req.params;
     try {
-      const { documentId, attachmentId } = req.params;
+      const doc = await Document.findById(documentId);
+      if (!doc) return res.status(404).json({ message: 'Document not found' });
 
-      const document = await Document.findById(documentId);
-      if (!document) {
-        return res.status(404).json({ message: 'Document not found' });
-      }
-
-      const attachmentIndex = document.attachments.findIndex(
-        (attachment) => attachment._id.toString() === attachmentId
+      const idx = doc.attachments.findIndex(
+        (att) => att._id.toString() === attachmentId
       );
-
-      if (attachmentIndex === -1) {
+      if (idx === -1)
         return res.status(404).json({ message: 'Attachment not found' });
+
+      const att = doc.attachments[idx];
+      if (req.user.role !== 'admin' && req.user.id !== att.user_id.toString()) {
+        return res.status(403).json({ message: 'Not authorized' });
       }
 
-      const attachment = document.attachments[attachmentIndex];
+      await s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: att.file_path.replace(/^\/+/, ''),
+        })
+      );
+      doc.attachments.splice(idx, 1);
+      await doc.save();
 
-      if (
-        req.user.role !== 'admin' &&
-        req.user.id !== attachment.user_id.toString()
-      ) {
-        return res
-          .status(403)
-          .json({ message: 'Not authorized to delete this attachment' });
-      }
-
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME,
-        Key: trimStart(attachment.file_path, '/'),
-      });
-
-      await s3Client.send(deleteCommand);
-
-      document.attachments.splice(attachmentIndex, 1);
-      await document.save();
-
-      res.json({ message: 'Attachment deleted successfully' });
-    } catch (error) {
-      console.error('Delete error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+      res.json({ message: 'Attachment deleted' });
+    } catch (err) {
+      console.error('Delete error:', err);
+      res.status(500).json({ message: 'Server error', error: err.message });
     }
   }
 );
-
-/**  Get Signed URLs for Viewing */
-router.get('/:documentId/signedUrls', authenticateToken, async (req, res) => {
-  try {
-    const { documentId } = req.params;
-
-    const document = await Document.findById(documentId);
-    if (!document) {
-      return res.status(404).json({ message: 'Document not found' });
-    }
-
-    const attachmentsWithSignedUrls = await Promise.all(
-      document.attachments.map(async (attachment) => {
-        const command = new GetObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: trimStart(attachment.file_path, '/'),
-        });
-        const signedUrl = await getSignedUrl(s3Client, command, {
-          expiresIn: 3600,
-        });
-        return { ...attachment.toObject(), signedUrl };
-      })
-    );
-
-    res.json(attachmentsWithSignedUrls);
-  } catch (error) {
-    console.error('Error fetching signed URLs:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-/** 🛠 Helper to clean key path */
-function trimStart(str, charlist = '/') {
-  let i = 0;
-  while (i < str.length && charlist.includes(str[i])) i++;
-  return str.substring(i);
-}
 
 module.exports = router;

@@ -1,58 +1,149 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import apiClient from '../api/apiClient';
+import Sidebar from '../components/Sidebar';
+import Logo from '../components/Logo';
+import { useUser } from '../context/UserContext';
 
 const UploadDocument = () => {
-  const [title, setTitle] = useState('');
-  const [file, setFile] = useState(null);
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const isAdmin = user?.role === 'admin';
 
-  const user = JSON.parse(localStorage.getItem('user')); 
-  const isAdmin = user && user.role === 'admin';
-  if (!isAdmin) {
-    return <p>You must be an admin to upload documents.</p>;
-  }
+  const [file, setFile] = useState(null);
+  const [title, setTitle] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [toast, setToast] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file || !title) {
-      alert('Please fill in all fields.');
+    if (!title || !file) {
+      setToast({ type: 'error', message: 'Fill in all fields and select a file.' });
       return;
     }
 
+    setIsUploading(true);
+    setUploadProgress(0);
+    setToast(null);
+
     try {
-      const createDocRes = await axios.post('/api/documents', { title }, { withCredentials: true });
-      const documentId = createDocRes.data._id;
+      // Create the document
+      const createRes = await apiClient.post('/api/documents', { title });
+      const documentId = createRes.data._id;
 
       const formData = new FormData();
-      formData.append('file', file); // field must match 'file' below
+      formData.append('file', file);
 
-      const uploadRes = await axios.post(`/api/documents/${documentId}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
-      });
+      // Upload with progress tracking
+      await apiClient.post(
+        `/api/documents/${documentId}`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (evt) => {
+            const percent = Math.round((evt.loaded * 100) / evt.total);
+            setUploadProgress(percent);
+          }
+        }
+      );
 
-      alert('Upload successful!');
-      console.log(uploadRes.data);
+      setToast({ type: 'success', message: 'Upload successful! Redirecting...' });
+      // auto-redirect after short delay
+      setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
-      console.error('Upload error:', err.response?.data || err.message);
-      alert(`Upload failed: ${err.response?.data?.message || err.message}`);
+      console.error('Upload error:', err);
+      setToast({ type: 'error', message: err.response?.data?.message || 'Upload failed' });
+    } finally {
+      setIsUploading(false);
     }
   };
 
+  // auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-red-600">You must be an admin to upload documents.</p>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title"
-      />
-      <input
-        type="file"
-        onChange={(e) => setFile(e.target.files[0])}
-        accept=".pdf"
-      />
-      <button type="submit">Upload</button>
-    </form>
+    <div className="flex min-h-screen bg-gray-100 dark:bg-dark">
+      <Sidebar />
+      <main className="flex-grow p-6">
+        <div className="max-w-2xl mx-auto bg-white dark:bg-neutral shadow-md rounded-lg p-8 space-y-6">
+          <div>
+            <Logo className="h-10" />
+          </div>
+          <h2 className="text-2xl font-semibold text-primary">Upload Document</h2>
+
+          {toast && (
+            <div
+              className={`fixed top-4 right-4 px-4 py-2 rounded shadow-md text-white ${
+                toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+              }`}
+            >
+              {toast.message}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Document Title
+              </label>
+              <input
+                id="title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter document title"
+                disabled={isUploading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="file" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Select PDF File
+              </label>
+              <input
+                id="file"
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="w-full mt-1 text-gray-800"
+                disabled={isUploading}
+              />
+            </div>
+
+            {isUploading && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Upload Progress: {uploadProgress}%
+                </label>
+                <progress className="w-full h-2" value={uploadProgress} max="100"></progress>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary-dark text-white font-medium py-2 rounded-lg transition disabled:opacity-50"
+              disabled={isUploading}
+            >
+              {isUploading ? 'Uploading...' : 'Upload Document'}
+            </button>
+          </form>
+        </div>
+      </main>
+    </div>
   );
 };
 
