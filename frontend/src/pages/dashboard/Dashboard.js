@@ -1,14 +1,13 @@
 // src/pages/dashboard/Dashboard.js
 import React, { useCallback, useEffect, useState } from 'react';
 import { Bars3Icon, InformationCircleIcon } from '@heroicons/react/24/outline';
-import Fuse from 'fuse.js';
 import { Link } from 'react-router-dom';
 import apiClient from '../../api/apiClient';
 import Logo from '../../components/Logo';
 import Sidebar from '../../components/Sidebar';
 import DocumentItem from '../../components/DocumentItem';
-import { useNavigate } from 'react-router-dom';
 import DocumentViewer from '../../components/DocumentViewer';
+import { useNavigate } from 'react-router-dom';
 import { useModal } from '../../context/ModalContext';
 import { useUser } from '../../context/UserContext';
 import '../../styles/base.css';
@@ -21,7 +20,7 @@ const Dashboard = () => {
 
   const [docs, setDocs] = useState([]);
   const [filteredDocs, setF] = useState([]);
-  const [searchTerm, setSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
@@ -43,11 +42,23 @@ const Dashboard = () => {
   }, [fetchDocs]);
 
   // 2) search
-  const fuse = new Fuse(docs, { keys: ['title'], threshold: 0.3 });
-  const handleSearch = (e) => {
-    const t = e.target.value;
-    setSearch(t);
-    setF(t ? fuse.search(t).map((r) => r.item) : docs);
+  const handleSearch = async (e) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+
+    if (!term) {
+      setF(docs);
+      return;
+    }
+
+    try {
+      const res = await apiClient.get('/api/documents/search', {
+        params: { q: term },
+      });
+      setF(res.data);
+    } catch (err) {
+      console.error('Search failed:', err);
+    }
   };
 
   const openDocument = async (doc) => {

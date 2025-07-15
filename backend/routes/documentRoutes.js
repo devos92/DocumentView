@@ -172,6 +172,25 @@ router.delete(
   }
 );
 
+router.get('/search', authenticateToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) {
+    return res.status(400).json({ message: 'Query parameter "q" is required' });
+  }
+
+  try {
+    const docs = await Document.find(
+      { $text: { $search: q } },
+      { score: { $meta: 'textScore' }, title: 1, created_at: 1 }
+    ).sort({ score: { $meta: 'textScore' } });
+
+    res.json(docs);
+  } catch (err) {
+    console.error('Search error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const docs = await Document.find({}, 'title created_at');
@@ -209,24 +228,6 @@ router.get('/:documentId/signedUrls', authenticateToken, async (req, res) => {
   );
 
   res.json(attachmentsWithSignedUrls);
-});
-
-router.get('/search', authenticateToken, async (req, res) => {
-  const { query } = req.query;
-  if (!query) return res.status(400).json({ message: 'Query is required' });
-
-  try {
-    const results = await Document.findfind(
-      { $text: { $search: q } },
-      { score: { $meta: 'textScore' } }
-    )
-      .sort({ score: { $meta: 'textScore' } })
-      .select('title created_at'); // pick whatever fields
-    res.json(results);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
 });
 
 /** 🛠 Helper to clean key path */
