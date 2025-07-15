@@ -2,6 +2,7 @@
   "dependencies": {
     "chart.js": "^4.4.4",
     "data.js": "^0.0.0",
+    "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^5.3.93",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

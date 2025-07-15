@@ -14,5 +14,13 @@ const attachmentSchema = new mongoose.Schema({
 const documentSchema = new mongoose.Schema({
   title: String,
   attachments: [attachmentSchema],
+  fullText: {
+    // Full text of the document for search
+    type: String,
+    default: '',
+  },
 });
+
+documentSchema.index({ title: 'text', fullText: 'text' });
+
 module.exports = mongoose.model('Document', documentSchema);

@@ -1,5 +1,9 @@
 require('dotenv').config();
 const multer = require('multer');
+const pdf = require('pdf-parse');
+const stream = require('stream');
+const { promisify } = require('util');
+const pipeline = promisify(stream.pipeline);
 const multerS3 = require('multer-s3');
 const {
   S3Client,
@@ -32,11 +36,18 @@ const upload = multer({
   }),
 });
 
+async function streamToBuffer(readable) {
+  const chunks = [];
+  for await (const chunk of readable) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
 /** create metadata */
 
 router.post('/', authenticateToken, async (req, res) => {
   const { title } = req.body;
-  console.log('Received title:', title);
   if (!title) return res.status(400).json({ message: 'Title is required' });
 
   try {
@@ -59,52 +70,55 @@ router.post(
   authenticateToken,
   upload.array('file', 5),
   async (req, res) => {
-    console.log('Upload route hit');
-    console.log('Files:', req.files);
-
     const { documentId } = req.params;
     const files = req.files;
 
-    if (!files || files.length === 0) {
+    if (!files.length) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
-    try {
-      const document = await Document.findById(documentId);
-      if (!document) {
-        return res.status(404).json({ message: 'Document not found' });
-      }
+    const doc = await Document.findById(documentId);
+    if (!doc) return res.status(404).json({ message: 'Document not found' });
 
-      const newAttachments = files.map((file) => ({
-        user_id: req.user.id,
-        file_path: file.key,
-        title: file.originalname,
-        created_at: new Date(),
-      }));
+    const newAttachments = files.map((f) => ({
+      user_id: req.user.id,
+      file_path: f.key,
+      title: f.originalname,
+      created_at: new Date(),
+    }));
+    doc.attachments.push(...newAttachments);
 
-      document.attachments.push(...newAttachments);
-      await document.save();
+    let fullText = doc.fullText || '';
+    await Promise.all(
+      files.map(async (f) => {
+        if (!f.mimetype.includes('pdf')) return;
+        // fetch back from S3
+        const get = new GetObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: f.key,
+        });
+        const s3obj = await s3Client.send(get);
+        const buffer = await streamToBuffer(s3obj.Body);
+        // parse text
+        const { text } = await pdf(buffer);
+        fullText += '\n\n' + text;
+      })
+    );
+    doc.fullText = fullText;
 
-      const attachmentsWithSignedUrls = await Promise.all(
-        newAttachments.map(async (attachment) => {
-          const command = new GetObjectCommand({
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: trimStart(attachment.file_path, '/'),
-          });
-          const signedUrl = await getSignedUrl(s3Client, command, {
-            expiresIn: 3600,
-          });
-          return { ...attachment, signedUrl };
-        })
-      );
+    await doc.save();
 
-      res.json(attachmentsWithSignedUrls);
-    } catch (error) {
-      console.error('Upload error:', error);
-      res
-        .status(500)
-        .json({ error: 'Internal Server Error', details: error.message });
-    }
+    const attachmentsWithSignedUrls = await Promise.all(
+      newAttachments.map(async (a) => {
+        const cmd = new GetObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: a.file_path,
+        });
+        const url = await getSignedUrl(s3Client, cmd, { expiresIn: 3600 });
+        return { ...a, signedUrl: url };
+      })
+    );
+    res.json(attachmentsWithSignedUrls);
   }
 );
 
@@ -195,6 +209,24 @@ router.get('/:documentId/signedUrls', authenticateToken, async (req, res) => {
   );
 
   res.json(attachmentsWithSignedUrls);
+});
+
+router.get('/search', authenticateToken, async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ message: 'Query is required' });
+
+  try {
+    const results = await Document.findfind(
+      { $text: { $search: q } },
+      { score: { $meta: 'textScore' } }
+    )
+      .sort({ score: { $meta: 'textScore' } })
+      .select('title created_at'); // pick whatever fields
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 /** 🛠 Helper to clean key path */

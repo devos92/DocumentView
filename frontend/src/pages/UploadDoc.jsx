@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import Sidebar from '../components/Sidebar';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 import Logo from '../components/Logo';
 import { useUser } from '../context/UserContext';
 
@@ -15,6 +16,7 @@ const UploadDocument = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [toast, setToast] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,8 +77,23 @@ const UploadDocument = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-dark">
-      <Sidebar />
+     <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-dark">
+      {/* Header */}
+      <header className="relative bg-primary shadow p-4 flex items-center justify-between dark:bg-primaryAlt">
+        {/* Left: Logo and Hamburger */}
+        <div>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="bg-white text-primary-600 px-4 py-2 rounded-lg font-semibold focus:outline-none transition-transform transform hover:scale-105 hover:shadow-lg flex items-center space-x-2 lg:hidden dark:bg-gray-700 dark:text-white"
+          >
+            <Bars3Icon className="w-6 h-6" />
+          </button>
+          <span className="hidden lg:inline">
+            <Logo className="truncate text-neutral dark:text-white xs:text-base md:text-lg lg:text-4xl" navigate={navigate} useClick={true} />
+          </span>
+        </div>
+      </header>
+      <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} navigate={navigate} />
       <main className="flex-grow p-6">
         <div className="max-w-2xl mx-auto bg-white dark:bg-neutral shadow-md rounded-lg p-8 space-y-6">
           <div>
