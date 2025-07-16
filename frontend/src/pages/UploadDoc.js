@@ -104,12 +104,14 @@ const UploadDocument = () => {
           </span>
         </div>
       </header>
+
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         navigate={navigate}
       />
-      <main className="flex-grow p-6">
+
+      <main className="sticky top -0 z- 50">
         <div className="max-w-2xl mx-auto bg-white dark:bg-neutral shadow-md rounded-lg p-8 space-y-6">
           <div>
             <Logo className="h-10" />
