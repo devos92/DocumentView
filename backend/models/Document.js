@@ -14,6 +14,8 @@ const attachmentSchema = new mongoose.Schema({
 const documentSchema = new mongoose.Schema({
   title: String,
   attachments: [attachmentSchema],
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
   fullText: {
     // Full text of the document for search
     type: String,
